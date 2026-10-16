@@ -44,18 +44,63 @@ try:
     else:
         columnas = st.columns(3)
 
-        for i, producto in enumerate(productos):
+    for i, producto in enumerate(productos):
             with columnas[i % 3]:
-                st.subheader(f"🐔 {producto['nombre']}")
-                st.write(producto.get("descripcion", ""))
-                st.write(f"Precio: Bs {producto.get('precio', 0)}")
-                st.write(f"Cantidad disponible: {producto.get('cantidad', 0)}")
-                st.write(f"👍 Me gusta: {producto.get('me_gusta', 0)}")
+                with st.container(border=True):
 
-                if st.button(
+                    if producto.get("imagen_url"):
+                        st.image(
+                            producto["imagen_url"],
+                            width=250
+                        )
+
+                    st.subheader(f"🐔 {producto['nombre']}")
+
+                    st.write(
+                        producto.get("descripcion", "")
+                    )
+
+                    st.write(
+                        f"💰 Precio: Bs {producto.get('precio', 0)}"
+                    )
+
+                    st.write(
+                        f"📦 Cantidad disponible: "
+                        f"{producto.get('cantidad', 0)}"
+                    )
+
+                    st.write(
+                        f"👍 Me gusta: {producto.get('me_gusta', 0)}"
+                    )
+
+                    if st.button(
+                        "👍 Me gusta",
+                        key=f"like_{producto['id']}_{i}"
+                    ):
+                        supabase.rpc(
+                            "incrementar_me_gusta",
+                            {"p_producto_id": producto["id"]}
+                        ).execute()
+
+                        st.rerun()
+
+                    mensaje = (
+                        f"Hola, quiero consultar por "
+                        f"{producto['nombre']}. ¿Está disponible?"
+                    )
+
+                    url = (
+                        "https://wa.me/59160468689?text="
+                        + urllib.parse.quote(mensaje)
+                    )
+
+                    st.link_button(
+                        "Consultar por WhatsApp",
+                        url
+                    )(
     "👍 Me gusta",
     key=f"like_{producto['id']}_{i}"
-):
+                    )
                     supabase.rpc(
                         "incrementar_me_gusta",
                         {"p_producto_id": producto["id"]}
