@@ -39,6 +39,18 @@ try:
     
     resultado = supabase.table("productos").select("*").execute()
     productos = resultado.data or []
+    busqueda = st.text_input(
+        "🔎 Buscar producto",
+        placeholder="Escribe el nombre del producto..."
+    )
+
+    if busqueda:
+        productos = [
+            producto
+            for producto in productos
+            if busqueda.lower() in producto.get("nombre", "").lower()
+            or busqueda.lower() in producto.get("descripcion", "").lower()
+        ]
 
     if not productos:
         st.info("Todavía no hay productos registrados.")
