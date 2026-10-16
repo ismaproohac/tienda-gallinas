@@ -136,16 +136,7 @@ try:
                         f"👍 Me gusta: {producto.get('me_gusta', 0)}"
                     )
 
-                    if st.button(
-                        "👍 Me gusta",
-                        key=f"like_{producto['id']}_{i}"
-                    ):
-                        supabase.rpc(
-                            "incrementar_me_gusta",
-                            {"p_producto_id": producto["id"]}
-                        ).execute()
-
-                        st.rerun()
+                   
 
                     mensaje = (
                         f"Hola, quiero consultar por "
