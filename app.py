@@ -1,5 +1,5 @@
 import urllib.parse
-
+import uuid
 import streamlit as st
 from supabase import create_client
 
@@ -107,6 +107,12 @@ with st.sidebar:
         with st.form("form_agregar_producto", clear_on_submit=True):
             nombre = st.text_input("Nombre del producto")
             descripcion = st.text_area("Descripción")
+
+            imagen = st.file_uploader(
+                "📷 Foto del producto",
+                type=["jpg", "jpeg", "png", "webp"]
+
+)
             precio = st.number_input(
                 "Precio (Bs)", min_value=0.0, step=1.0
             )
@@ -130,6 +136,28 @@ with st.sidebar:
                         SUPABASE_URL,
                         st.secrets["SUPABASE_ADMIN_KEY"],
                     )
+                    imagen_url = None
+
+                    if imagen is not None:
+                        extension = imagen.name.rsplit(".", 1)[-1].lower()
+                        ruta_imagen = (
+                            f"productos/{uuid.uuid4().hex}.{extension}"
+                        )
+
+                        supabase_admin.storage.from_(
+                            "fotos-productos"
+                        ).upload(
+                            path=ruta_imagen,
+                            file=imagen.getvalue(),
+                            file_options={
+                                "content-type": imagen.type,
+                                "upsert": "false",
+                            },
+                        )
+
+                        imagen_url = supabase_admin.storage.from_(
+                            "fotos-productos"
+                        ).get_public_url(ruta_imagen)
 
                     nuevo_producto = {
                         "nombre": nombre.strip(),
@@ -137,6 +165,7 @@ with st.sidebar:
                         "precio": precio,
                         "cantidad": cantidad,
                         "me_gusta": 0,
+                        "imagen_url": imagen_url,
                     }
 
                     supabase_admin.table("productos").insert(
@@ -176,6 +205,9 @@ try:
 
         for i, producto in enumerate(productos):
             with columnas[i % 3]:
+
+                if producto.get("imagen_url"):
+                 st.image(producto["imagen_url"], use_container_width=True)
                 st.subheader(f"🐔 {producto['nombre']}")
                 st.write(producto.get("descripcion") or "")
                 st.write(f"Precio: Bs {producto.get('precio', 0)}")
