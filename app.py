@@ -218,6 +218,74 @@ with st.sidebar:
             else:
                 st.info("Todavía no hay productos para editar.")
 
+        with st.expander("🗑️ Eliminar producto", expanded=False):
+            productos_eliminar = []
+
+            try:
+                supabase_admin_eliminar = create_client(
+                    SUPABASE_URL,
+                    st.secrets["SUPABASE_ADMIN_KEY"],
+                )
+
+                respuesta_eliminar = (
+                    supabase_admin_eliminar.table("productos")
+                    .select("id, nombre")
+                    .execute()
+                )
+
+                productos_eliminar = respuesta_eliminar.data or []
+
+            except Exception as e:
+                st.error(f"No se pudieron cargar los productos: {e}")
+
+            if productos_eliminar:
+                opciones_eliminar = {
+                    f"{p['nombre']} (ID {p['id']})": p
+                    for p in productos_eliminar
+                }
+
+                seleccionado_eliminar = st.selectbox(
+                    "Selecciona el producto que deseas eliminar",
+                    list(opciones_eliminar.keys()),
+                    key="producto_a_eliminar",
+                )
+
+                producto_eliminar = opciones_eliminar[
+                    seleccionado_eliminar
+                ]
+
+                confirmar_eliminar = st.checkbox(
+                    f"Confirmo que quiero eliminar "
+                    f"{producto_eliminar['nombre']}",
+                    key="confirmar_eliminar_producto",
+                )
+
+                if st.button(
+                    "🗑️ Eliminar definitivamente",
+                    key="boton_eliminar_producto",
+                ):
+                    if not confirmar_eliminar:
+                        st.warning(
+                            "Marca la casilla de confirmación antes de eliminar."
+                        )
+                    else:
+                        try:
+                            (
+                                supabase_admin_eliminar.table("productos")
+                                .delete()
+                                .eq("id", producto_eliminar["id"])
+                                .execute()
+                            )
+
+                            st.success("¡Producto eliminado correctamente!")
+                            st.rerun()
+
+                        except Exception as e:
+                            st.error("No se pudo eliminar el producto:")
+                            st.code(str(e))
+
+            else:
+                st.info("No hay productos para eliminar.")
         if st.button("🔒 Cerrar sesión", key="cerrar_sesion_admin"):
             st.session_state.admin_autenticado = False
             st.rerun()
