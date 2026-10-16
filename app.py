@@ -1,30 +1,173 @@
+import urllib.parse
 
 import streamlit as st
-import urllib.parse
+from supabase import create_client
+
+
+# --------------------------------------------------
+# Configuración y conexión con Supabase
+# --------------------------------------------------
 st.set_page_config(
     page_title="Tienda de Gallinas",
     page_icon="🐔",
-    layout="wide"
+    layout="wide",
 )
 
+SUPABASE_URL = st.secrets["SUPABASE_URL"]
+SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+
+# Conexión pública: leer productos y registrar Me gusta
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+
+# --------------------------------------------------
+# Estado de sesión del administrador
+# --------------------------------------------------
+if "admin_autenticado" not in st.session_state:
+    st.session_state.admin_autenticado = False
+
+
+# --------------------------------------------------
+# Encabezado
+# --------------------------------------------------
 st.title("🐔 Tienda de Gallinas")
 st.subheader("Gallinas saludables para tu granja")
-
 st.write("Bienvenido a nuestra tienda online.")
-
-st.divider()
-
-supabase_url = st.secrets["SUPABASE_URL"]
-supabase_key = st.secrets["SUPABASE_KEY"]
-
-from supabase import create_client
-supabase = create_client(supabase_url, supabase_key)
-
 st.header("Nuestros productos")
 
 try:
     resultado = supabase.table("productos").select("*").execute()
-    productos = resultado.data
+    productos = resultado.data or []
+
+    if not productos:
+        st.info("Todavía no hay productos registrados.")
+    else:
+        columnas = st.columns(3)
+
+        for i, producto in enumerate(productos):
+            with columnas[i % 3]:
+                st.subheader(f"🐔 {producto['nombre']}")
+                st.write(producto.get("descripcion", ""))
+                st.write(f"Precio: Bs {producto.get('precio', 0)}")
+                st.write(f"Cantidad disponible: {producto.get('cantidad', 0)}")
+                st.write(f"👍 Me gusta: {producto.get('me_gusta', 0)}")
+
+                if st.button(
+    "👍 Me gusta",
+    key=f"like_{producto['id']}_{i}"
+):
+                    supabase.rpc(
+                        "incrementar_me_gusta",
+                        {"p_producto_id": producto["id"]}
+                    ).execute()
+                    st.rerun()
+
+                mensaje = f"Hola, quiero consultar por {producto['nombre']}. ¿Está disponible?"
+                url = "https://wa.me/59160468689?text=" + urllib.parse.quote(mensaje)
+                st.link_button("Consultar por WhatsApp", url)
+
+except Exception as e:
+    st.error(f"No se pudieron cargar los productos: {e}")
+
+
+# --------------------------------------------------
+# Panel privado de administración
+# --------------------------------------------------
+with st.sidebar:
+    st.subheader("🔐 Administración")
+
+    if not st.session_state.admin_autenticado:
+        clave = st.text_input(
+            "Contraseña de administrador",
+            type="password",
+            key="clave_admin",
+        )
+
+        if st.button("Iniciar sesión"):
+            try:
+                if clave == st.secrets["admin"]["password"]:
+                    st.session_state.admin_autenticado = True
+                    st.rerun()
+                else:
+                    st.error("Contraseña incorrecta")
+            except Exception:
+                st.error(
+                    "No se encontró la contraseña de administrador "
+                    "en los secretos de la aplicación."
+                )
+
+    else:
+        st.success("Sesión de administrador iniciada")
+
+        if st.button("🔒 Cerrar sesión", key="cerrar_sesion_admin"):
+            st.session_state.admin_autenticado = False
+            st.rerun()
+        st.subheader("➕ Agregar producto")
+
+        with st.form("form_agregar_producto", clear_on_submit=True):
+            nombre = st.text_input("Nombre del producto")
+            descripcion = st.text_area("Descripción")
+            precio = st.number_input(
+                "Precio (Bs)", min_value=0.0, step=1.0
+            )
+            cantidad = st.number_input(
+                "Cantidad disponible", min_value=0, step=1
+            )
+            guardar = st.form_submit_button("Guardar producto")
+
+        if guardar:
+            if not nombre.strip():
+                st.error("Escribe el nombre del producto.")
+            elif "SUPABASE_ADMIN_KEY" not in st.secrets:
+                st.error(
+                    "Falta configurar SUPABASE_ADMIN_KEY en los secretos. "
+                    "No se ha guardado el producto."
+                )
+            else:
+               
+                try:
+                    supabase_admin = create_client(
+                        SUPABASE_URL,
+                        st.secrets["SUPABASE_ADMIN_KEY"],
+                    )
+
+                    nuevo_producto = {
+                        "nombre": nombre.strip(),
+                        "descripcion": descripcion.strip(),
+                        "precio": precio,
+                        "cantidad": cantidad,
+                        "me_gusta": 0,
+                    }
+
+                    supabase_admin.table("productos").insert(
+                        nuevo_producto
+                    ).execute()
+
+                    st.success("¡Producto agregado correctamente!")
+                    st.rerun()
+
+                except Exception as e:
+                    st.error("Error real al guardar el producto:")
+                    st.code(str(e))
+
+if st.button("Cerrar sesión"):
+            st.session_state.admin_autenticado = False
+            st.rerun()
+
+
+# --------------------------------------------------
+# Catálogo público
+# --------------------------------------------------
+st.header("Nuestros productos")
+
+try:
+    resultado = (
+        supabase.table("productos")
+        .select("*")
+        .order("id")
+        .execute()
+    )
+    productos = resultado.data or []
 
     if not productos:
         st.info("Todavía no hay productos registrados.")
@@ -35,54 +178,59 @@ try:
             with columnas[i % 3]:
                 st.subheader(f"🐔 {producto['nombre']}")
                 st.write(producto.get("descripcion") or "")
-                st.write(f"Precio: Bs {producto['precio']}")
-                st.write(f"Cantidad disponible: {producto['cantidad']}")
+                st.write(f"Precio: Bs {producto.get('precio', 0)}")
+                st.write(
+                    f"Cantidad disponible: {producto.get('cantidad', 0)}"
+                )
+                st.write(
+                    f"👍 Me gusta: {producto.get('me_gusta', 0)}"
+                )
 
-                mensaje = f"Hola, quiero consultar por {producto['nombre']}. ¿Está disponible?"
-                url_whatsapp = "https://wa.me/59160468689?text=" + urllib.parse.quote(mensaje)
+                if st.button(
+                    "👍 Me gusta",
+                    key=f"like_{producto['id']}",
+                ):
+                    try:
+                        supabase.rpc(
+                            "incrementar_me_gusta",
+                            {"p_producto_id": producto["id"]},
+                        ).execute()
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"No se pudo registrar el Me gusta: {e}")
+
+                mensaje = (
+                    f"Hola, quiero consultar por {producto['nombre']}. "
+                    "¿Está disponible?"
+                )
+                url_whatsapp = (
+                    "https://wa.me/59160468689?text="
+                    + urllib.parse.quote(mensaje)
+                )
                 st.link_button("Consultar por WhatsApp", url_whatsapp)
-                st.write(f"Cantidad disponible: {producto['cantidad']}")
 
 except Exception as e:
     st.error(f"No se pudieron cargar los productos: {e}")
 
-st.divider()
 
+# --------------------------------------------------
+# Contacto y estado de conexión
+# --------------------------------------------------
+st.divider()
 st.subheader("📞 Contacto")
 st.write("Pronto podrás realizar tus pedidos por WhatsApp.")
 
-st.sidebar.header("Estado de la conexión")
-
-try:
-    supabase_url = st.secrets["SUPABASE_URL"]
-    supabase_key = st.secrets["SUPABASE_KEY"]
-    st.sidebar.success("Configuración de Supabase encontrada")
-
-
-except Exception as e:
-    st.sidebar.error(f"Error de Supabase: {e}")
-
-try:
-    from supabase import create_client
-
-    supabase = create_client(supabase_url, supabase_key)
-    resultado = supabase.table("productos").select("*").limit(5).execute()
-
-    st.sidebar.success("¡Conexión con Supabase funcionando!")
-    st.sidebar.write("Productos encontrados:", len(resultado.data))
-
-except Exception as e:
-    st.sidebar.error(f"Error de conexión: {e}")
-
-
-try:
-    from supabase import create_client
-
-    supabase = create_client(supabase_url, supabase_key)
-    resultado = supabase.table("productos").select("*").limit(5).execute()
-
-    st.sidebar.success("¡Conexión con Supabase funcionando!")
-    st.sidebar.write("Productos encontrados:", len(resultado.data))
-
-except Exception as e:
-    st.sidebar.error(f"Error de conexión: {e}")
+with st.sidebar:
+    st.divider()
+    st.header("Estado de la conexión")
+    try:
+        prueba = (
+            supabase.table("productos")
+            .select("id")
+            .limit(1)
+            .execute()
+        )
+        st.success("Conexión con Supabase funcionando")
+    except Exception as e:
+        st.error("No se pudo conectar con Supabase.")
+        st.caption(f"Detalle técnico: {e}")
