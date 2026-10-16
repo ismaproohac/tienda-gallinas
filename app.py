@@ -222,6 +222,7 @@ with st.sidebar:
             productos_eliminar = []
 
             try:
+                
                 supabase_admin_eliminar = create_client(
                     SUPABASE_URL,
                     st.secrets["SUPABASE_ADMIN_KEY"],
@@ -229,11 +230,12 @@ with st.sidebar:
 
                 respuesta_eliminar = (
                     supabase_admin_eliminar.table("productos")
-                    .select("id, nombre")
+                    .select("id, nombre, imagen_url")
                     .execute()
                 )
 
-                productos_eliminar = respuesta_eliminar.data or []
+                producto
+                _eliminar = respuesta_eliminar.data or []
 
             except Exception as e:
                 st.error(f"No se pudieron cargar los productos: {e}")
@@ -394,7 +396,7 @@ try:
             with columnas[i % 3]:
 
                 if producto.get("imagen_url"):
-                 st.image(producto["imagen_url"], use_container_width=True)
+                 st.image(producto["imagen_url"], width=250)
                 st.subheader(f"🐔 {producto['nombre']}")
                 st.write(producto.get("descripcion") or "")
                 st.write(f"Precio: Bs {producto.get('precio', 0)}")
