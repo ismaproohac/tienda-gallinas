@@ -98,6 +98,125 @@ with st.sidebar:
 
     else:
         st.success("Sesión de administrador iniciada")
+        with st.expander("✏️ Editar producto", expanded=False):
+            try:
+                supabase_admin = create_client(
+                    SUPABASE_URL,
+                    st.secrets["SUPABASE_ADMIN_KEY"],
+                )
+
+                respuesta = (
+                    supabase_admin.table("productos")
+                    .select("*")
+                    .execute()
+                )
+                productos_editar = respuesta.data or []
+
+            except Exception as e:
+                st.error(f"No se pudieron cargar los productos: {e}")
+                productos_editar = []
+
+            if productos_editar:
+                opciones = {
+                    f"{p['nombre']} (ID {p['id']})": p
+                    for p in productos_editar
+                }
+
+                seleccionado = st.selectbox(
+                    "Selecciona el producto",
+                    list(opciones.keys()),
+                    key="producto_a_editar",
+                )
+                producto_actual = opciones[seleccionado]
+
+                with st.form("form_editar_producto"):
+                    nombre_editado = st.text_input(
+                        "Nombre",
+                        value=str(producto_actual.get("nombre") or ""),
+                    )
+
+                    descripcion_editada = st.text_area(
+                        "Descripción",
+                        value=str(producto_actual.get("descripcion") or ""),
+                    )
+
+                    precio_editado = st.number_input(
+                        "Precio (Bs)",
+                        min_value=0.0,
+                        value=float(producto_actual.get("precio") or 0),
+                        step=1.0,
+                    )
+
+                    cantidad_editada = st.number_input(
+                        "Cantidad disponible",
+                        min_value=0,
+                        value=int(producto_actual.get("cantidad") or 0),
+                        step=1,
+                    )
+
+                    imagen_editada = st.file_uploader(
+                        "Cambiar foto (opcional)",
+                        type=["jpg", "jpeg", "png", "webp"],
+                        key="imagen_editar_producto",
+                    )
+
+                    guardar_cambios = st.form_submit_button(
+                        "Guardar cambios"
+                    )
+
+                if guardar_cambios:
+                    if not nombre_editado.strip():
+                        st.error("Escribe el nombre del producto.")
+                    else:
+                        try:
+                            cambios = {
+                                "nombre": nombre_editado.strip(),
+                                "descripcion": descripcion_editada.strip(),
+                                "precio": precio_editado,
+                                "cantidad": cantidad_editada,
+                            }
+
+                            if imagen_editada is not None:
+                                extension = (
+                                    imagen_editada.name.rsplit(".", 1)[-1]
+                                    .lower()
+                                )
+                                ruta_imagen = (
+                                    f"productos/{uuid.uuid4().hex}.{extension}"
+                                )
+
+                                supabase_admin.storage.from_(
+                                    "fotos-productos"
+                                ).upload(
+                                    path=ruta_imagen,
+                                    file=imagen_editada.getvalue(),
+                                    file_options={
+                                        "content-type": imagen_editada.type,
+                                        "upsert": "false",
+                                    },
+                                )
+
+                                cambios["imagen_url"] = (
+                                    supabase_admin.storage.from_(
+                                        "fotos-productos"
+                                    ).get_public_url(ruta_imagen)
+                                )
+
+                            (
+                                supabase_admin.table("productos")
+                                .update(cambios)
+                                .eq("id", producto_actual["id"])
+                                .execute()
+                            )
+
+                            st.success("¡Producto actualizado correctamente!")
+                            st.rerun()
+
+                        except Exception as e:
+                            st.error("No se pudo actualizar el producto:")
+                            st.code(str(e))
+            else:
+                st.info("Todavía no hay productos para editar.")
 
         if st.button("🔒 Cerrar sesión", key="cerrar_sesion_admin"):
             st.session_state.admin_autenticado = False
