@@ -136,7 +136,32 @@ try:
                         "Consultar por WhatsApp",
                         url
                     )
+                    enlace_tienda = (
+                        "https://ismaproohac-tienda-gallinas-app-u5a7cb.streamlit.app/"
+                    )
 
+                    enlace_facebook = (
+                        "https://www.facebook.com/sharer/sharer.php?u="
+                        + urllib.parse.quote(enlace_tienda)
+                    )
+
+                    st.link_button(
+                        "🔵 Compartir en Facebook",
+                        enlace_facebook
+                    )
+                    enlace_tienda = (
+                        "https://ismaproohac-tienda-gallinas-app-u5a7cb.streamlit.app/"
+                    )
+
+                    enlace_facebook = (
+                        "https://www.facebook.com/sharer/sharer.php?u="
+                        + urllib.parse.quote(enlace_tienda)
+                    )
+
+                    st.link_button(
+                        "🔵 Compartir en Facebook",
+                        enlace_facebook
+                    )
 except Exception as e:
     st.error(f"Error al cargar los productos: {e}")
 
