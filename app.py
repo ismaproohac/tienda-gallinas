@@ -34,26 +34,53 @@ st.title("🐔 Tienda de Gallinas")
 st.subheader("Gallinas saludables para tu granja")
 st.write("Bienvenido a nuestra tienda online.")
 st.header("Nuestros productos")
-
 try:
-    
+   
     resultado = supabase.table("productos").select("*").execute()
     productos = resultado.data or []
+
+    categorias_disponibles = sorted({
+        (producto.get("categoria") or "").strip()
+        for producto in productos
+        if (producto.get("categoria") or "").strip()
+    })
+
+    opciones_categoria = ["Todas"] + categorias_disponibles
+
+    categoria_seleccionada = st.selectbox(
+        "📂 Filtrar por categoría",
+        opciones_categoria,
+        key="filtro_categoria_tienda",
+    
+    )
+
     busqueda = st.text_input(
         "🔎 Buscar producto",
         placeholder="Escribe el nombre del producto..."
     )
 
+    # Filtrar por categoría
+    if categoria_seleccionada != "Todas":
+        productos = [
+            producto
+            for producto in productos
+            if (producto.get("categoria") or "").strip()
+             == categoria_seleccionada
+        ]
+
+    # Filtrar por búsqueda
     if busqueda:
         productos = [
             producto
             for producto in productos
             if busqueda.lower() in producto.get("nombre", "").lower()
-            or busqueda.lower() in producto.get("descripcion", "").lower()
+            or busqueda.lower()
+            in producto.get("descripcion", "").lower()
         ]
 
+    # Mostrar productos una sola vez
     if not productos:
-        st.info("Todavía no hay productos registrados.")
+        st.info("No se encontraron productos.")
     else:
         columnas = st.columns(3)
 
@@ -69,9 +96,7 @@ try:
 
                     st.subheader(f"🐔 {producto['nombre']}")
 
-                    st.write(
-                        producto.get("descripcion", "")
-                    )
+                    st.write(producto.get("descripcion", ""))
 
                     st.write(
                         f"💰 Precio: Bs {producto.get('precio', 0)}"
@@ -111,11 +136,54 @@ try:
                         "Consultar por WhatsApp",
                         url
                     )
-                    resultado = supabase.table("productos").select("*").execute()
+
+except Exception as e:
+    st.error(f"Error al cargar los productos: {e}")
+try:
+    resultado = supabase.table("productos").select("*").execute()
     productos = resultado.data or []
 
+    categorias_disponibles = sorted({
+        producto.get("categoria", "").strip()
+        for producto in productos
+        if producto.get("categoria", "").strip()
+    })
+
+    opciones_categoria = ["Todas"] + categorias_disponibles
+
+    categoria_seleccionada = st.selectbox(
+        "📂 Filtrar por categoría",
+        opciones_categoria,
+        key="filtro_categoria_tienda",
+    )
+
+    busqueda = st.text_input(
+        "🔎 Buscar producto",
+        placeholder="Escribe el nombre del producto..."
+    )
+
+    # Filtrar por categoría
+    if categoria_seleccionada != "Todas":
+        productos = [
+            producto
+            for producto in productos
+            if producto.get("categoria", "").strip()
+            == categoria_seleccionada
+        ]
+
+    # Filtrar por búsqueda
+    if busqueda:
+        productos = [
+            producto
+            for producto in productos
+            if busqueda.lower() in producto.get("nombre", "").lower()
+            or busqueda.lower()
+            in producto.get("descripcion", "").lower()
+        ]
+
+    # Mostrar productos una sola vez
     if not productos:
-        st.info("Todavía no hay productos registrados.")
+        st.info("No se encontraron productos.")
     else:
         columnas = st.columns(3)
 
@@ -131,9 +199,7 @@ try:
 
                     st.subheader(f"🐔 {producto['nombre']}")
 
-                    st.write(
-                        producto.get("descripcion", "")
-                    )
+                    st.write(producto.get("descripcion", ""))
 
                     st.write(
                         f"💰 Precio: Bs {producto.get('precio', 0)}"
@@ -148,7 +214,16 @@ try:
                         f"👍 Me gusta: {producto.get('me_gusta', 0)}"
                     )
 
-                   
+                    if st.button(
+                        "👍 Me gusta",
+                        key=f"like_{producto['id']}_{i}"
+                    ):
+                        supabase.rpc(
+                            "incrementar_me_gusta",
+                            {"p_producto_id": producto["id"]}
+                        ).execute()
+
+                        st.rerun()
 
                     mensaje = (
                         f"Hola, quiero consultar por "
@@ -164,10 +239,12 @@ try:
                         "Consultar por WhatsApp",
                         url
                     )
+
+except Exception as e:
+    st.error(f"Error al cargar los productos: {e}")
+
 except Exception as e:
     st.error(f"No se pudieron cargar los productos: {e}")
-
-
 # --------------------------------------------------
 # Panel privado de administración
 # --------------------------------------------------
@@ -394,6 +471,16 @@ with st.sidebar:
         with st.form("form_agregar_producto", clear_on_submit=True):
             nombre = st.text_input("Nombre del producto")
             descripcion = st.text_area("Descripción")
+            categoria = st.selectbox(
+    "Categoría del producto",
+    [
+        "Gallinas ponedoras",
+        "Gallinas criollas",
+        "Pollitos",
+        "Otros",
+    ],
+    key="categoria_nuevo_producto",
+)
 
             imagen = st.file_uploader(
                 "📷 Foto del producto",
@@ -451,9 +538,10 @@ with st.sidebar:
                         "descripcion": descripcion.strip(),
                         "precio": precio,
                         "cantidad": cantidad,
+                        "categoria": categoria,
                         "me_gusta": 0,
                         "imagen_url": imagen_url,
-                    }
+                       }
 
                     supabase_admin.table("productos").insert(
                         nuevo_producto
