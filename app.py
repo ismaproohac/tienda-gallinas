@@ -122,9 +122,17 @@ try:
 
                         st.rerun()
 
+                    enlace_tienda = (
+                        "https://ismaproohac-tienda-gallinas-app-u5a7cb.streamlit.app/"
+                    )
+
+                    nombre_producto = producto["nombre"]
+                    precio_producto = producto["precio"]
+
                     mensaje = (
-                        f"Hola, quiero consultar por "
-                        f"{producto['nombre']}. ¿Está disponible?"
+                        f"Hola, quiero consultar por {nombre_producto}, "
+                        f"con precio de Bs {precio_producto}. "
+                        "¿Está disponible?"
                     )
 
                     url = (
@@ -133,35 +141,31 @@ try:
                     )
 
                     st.link_button(
-                        "Consultar por WhatsApp",
+                        "🟢 Consultar por WhatsApp",
                         url
                     )
-                    enlace_tienda = (
-                        "https://ismaproohac-tienda-gallinas-app-u5a7cb.streamlit.app/"
+
+                    mensaje_facebook = (
+                        f"🐔 ¡Mira este producto de nuestra Tienda de Gallinas! "
+                        f"{nombre_producto} por Bs {precio_producto}. "
+                        f"Consulta aquí: {enlace_tienda}"
                     )
 
                     enlace_facebook = (
                         "https://www.facebook.com/sharer/sharer.php?u="
                         + urllib.parse.quote(enlace_tienda)
+                        + "&quote="
+                        + urllib.parse.quote(mensaje_facebook)
                     )
 
                     st.link_button(
                         "🔵 Compartir en Facebook",
                         enlace_facebook
                     )
-                    enlace_tienda = (
-                        "https://ismaproohac-tienda-gallinas-app-u5a7cb.streamlit.app/"
-                    )
 
-                    enlace_facebook = (
-                        "https://www.facebook.com/sharer/sharer.php?u="
-                        + urllib.parse.quote(enlace_tienda)
-                    )
+                    st.caption("📋 Copia este texto para tu publicación:")
+                    st.code(mensaje_facebook, language=None)
 
-                    st.link_button(
-                        "🔵 Compartir en Facebook",
-                        enlace_facebook
-                    )
 except Exception as e:
     st.error(f"Error al cargar los productos: {e}")
 
