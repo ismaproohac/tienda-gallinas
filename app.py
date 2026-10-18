@@ -89,10 +89,33 @@ try:
                 with st.container(border=True):
 
                     if producto.get("imagen_url"):
-                       st.image(
-                       producto["imagen_url"],
-                       use_container_width=True
-)
+                        st.markdown(
+                            f"""
+                            <div style="
+                                width: 100%;
+                                height: 180px;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                background-color: #f7f7f7;
+                                border-radius: 8px;
+                                overflow: hidden;
+                            ">
+                                <img
+                                    src="{producto['imagen_url']}"
+                                    alt="Foto del producto"
+                                    style="
+                                        width: 100%;
+                                        height: 180px;
+                                        object-fit: contain;
+                                    "
+                                />
+                            </div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
+                        
+                        
                         
 
                     st.subheader(f"🐔 {producto['nombre']}")
@@ -508,29 +531,34 @@ try:
             with columnas[i % 3]:
 
                 if producto.get("imagen_url"):
-                 st.image(producto["imagen_url"], width=250)
-                st.subheader(f"🐔 {producto['nombre']}")
-                st.write(producto.get("descripcion") or "")
-                st.write(f"Precio: Bs {producto.get('precio', 0)}")
-                st.write(
-                    f"Cantidad disponible: {producto.get('cantidad', 0)}"
-                )
-                st.write(
-                    f"👍 Me gusta: {producto.get('me_gusta', 0)}"
-                )
-
-                if st.button(
-                    "👍 Me gusta",
-                    key=f"like_{producto['id']}",
-                ):
-                    try:
-                        supabase.rpc(
-                            "incrementar_me_gusta",
-                            {"p_producto_id": producto["id"]},
-                        ).execute()
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"No se pudo registrar el Me gusta: {e}")
+                    st.markdown(
+                        f"""
+                        <div style="
+                            width: 100%;
+                            height: 180px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            background-color: #f7f7f7;
+                            border-radius: 8px;
+                            overflow: hidden;
+                        ">
+                            <img
+                                src="{producto['imagen_url']}"
+                                alt="Foto del producto"
+                                style="
+                                    max-width: 100%;
+                                    max-height: 170px;
+                                    width: auto;
+                                    height: auto;
+                                    object-fit: contain;
+                                "
+                            />
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+    
 
                 mensaje = (
                     f"Hola, quiero consultar por {producto['nombre']}. "
