@@ -407,8 +407,9 @@ with st.sidebar:
 )
 
             imagen = st.file_uploader(
-                "📷 Foto del producto",
-                type=["jpg", "jpeg", "png", "webp"]
+    "📷 Foto del producto",
+    type=["jpg", "jpeg", "png", "webp"],
+    key="imagen_nuevo_producto",
 
 )
             precio = st.number_input(
