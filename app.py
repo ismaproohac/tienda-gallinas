@@ -89,10 +89,11 @@ try:
                 with st.container(border=True):
 
                     if producto.get("imagen_url"):
-                        st.image(
-                            producto["imagen_url"],
-                            width=250
-                        )
+                       st.image(
+                       producto["imagen_url"],
+                       use_container_width=True
+)
+                        
 
                     st.subheader(f"🐔 {producto['nombre']}")
 
