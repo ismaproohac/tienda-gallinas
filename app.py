@@ -280,7 +280,7 @@ with st.sidebar:
                     imagen_editada = st.file_uploader(
                         "Cambiar foto (opcional)",
                         type=["jpg", "jpeg", "png", "webp"],
-                        key="imagen_editar_producto",
+                         key=f"imagen_editar_producto_{producto_actual['id']}",
                     )
 
                     guardar_cambios = st.form_submit_button(
