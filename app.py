@@ -356,6 +356,7 @@ with st.sidebar:
                     .select("id, nombre, imagen_url")
                     .execute()
                 )
+                productos_eliminar = respuesta_eliminar.data or []
 
                 producto
                 _eliminar = respuesta_eliminar.data or []
