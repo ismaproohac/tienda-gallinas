@@ -122,14 +122,21 @@ try:
 
                     st.write(producto.get("descripcion", ""))
 
-                    st.write(
-                        f"💰 Precio: Bs {producto.get('precio', 0)}"
+                    cantidad_disponible = int(
+                        producto.get("cantidad") or 0
                     )
 
-                    st.write(
-                        f"📦 Cantidad disponible: "
-                        f"{producto.get('cantidad', 0)}"
-                    )
+                    if cantidad_disponible > 0:
+                        st.write(
+                            f"💰 Precio: Bs {producto.get('precio', 0)}"
+                        )
+                        st.write(
+                            f"📦 Cantidad disponible: {cantidad_disponible}"
+                        )
+                    else:
+                        st.info(
+                            "⏳ Próximamente: aún no disponible para la venta."
+                        )
 
                     st.write(
                         f"👍 Me gusta: {producto.get('me_gusta', 0)}"
